@@ -53,11 +53,10 @@
 
 (defn insert-name-address-to-db! [db name-address-map-list]
   (assert (every? :address name-address-map-list))
-  (let [address-list ((comp vec map) (comp vec :address)  name-address-map-list)]
-    (j/execute! db
-                "insert or ignore into addresses values (?)"
-                address-list))
-  
+  (let [address-list (map :address  name-address-map-list)
+        statement (apply vector "insert or ignore into addresses values (?)"
+                         (map vector address-list))]
+    (j/execute! db statement {:multi? true}))
   (j/insert-multi! db "names"
                    ;;name can't be null for sql
                    (filter :name name-address-map-list)))
