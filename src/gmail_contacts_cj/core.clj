@@ -55,8 +55,8 @@
             ;;TODO verbosity level
             (printf "\ron message %d (uid: %d, date: %s, subject: %s)"
                     index uid
-                    (clojure-mail.message/subject message)
-                    (clojure-mail.message/date-sent message))
+                    (clojure-mail.message/date-sent message)
+                    (clojure-mail.message/subject message))
             (flush))
           (db/insert-name-address-to-db! db name-address-maps)
           (db/store-uid! db uid))
