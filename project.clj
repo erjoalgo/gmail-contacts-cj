@@ -8,6 +8,8 @@
                  ;;[io.forward/clojure-mail "1.0.4" ]
                  [org.clojure/java.jdbc "0.6.1"]
                  [org.xerial/sqlite-jdbc "3.7.2"]
+                 [org.clojure/tools.cli "0.3.5"]
+                 [org.clojure/tools.logging "0.3.1"]
                  ]
   ;;TODO how to refer to forked version on github
   :resource-paths ["/home/ealfonso/repos/clojure-mail/target/clojure-mail-1.0.4-standalone.jar"]
