@@ -1,4 +1,4 @@
-(ns gmail-contacts-cj.db
+(ns stmp-contacts-cj.db
   ;;(:require [clojure.java.jdbc :refer [query execute! insert!]])
   (:require [clojure.java.jdbc :as j]
             [clojure.tools.logging :as log]))
@@ -61,7 +61,7 @@
                    ;;name can't be null for sql
                    (filter :name name-address-map-list)))
 
-(def db-filename "gmail-contacts.db")
+(def db-filename "resources/stmp-contacts.db")
 (def db {:classname   "org.sqlite.JDBC"
          :subprotocol "sqlite"
          :subname     db-filename})

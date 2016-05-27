@@ -1,9 +1,10 @@
-(ns gmail-contacts-cj.core
+(ns stmp-contacts-cj.core
   (:require
-   [clojure-mail.core :refer :all]
-   [clojure-mail.gmail :as gmail]
-   [clojure-mail.message :refer (read-message)]
-   [gmail-contacts-cj.db :as db]
+   [clojure-mail.core]
+   ;[clojure-mail.core :refer :all]
+   ;[clojure-mail.message :refer (read-message)]
+   ;[clojure-mail.message :as message]
+   [stmp-contacts-cj.db :as db]
    [clojure.tools.cli :refer [parse-opts]]
    [clojure.tools.logging :as log]
    )
@@ -23,7 +24,8 @@
 
 (def cli-options
   [["-m" "--max-results MAX" "max results to fetch, default 600, 0 for infinite"
-    :parse-fn #(Integer/parseInt %)
+    parse-fn #(Integer/parseInt %)
+    ;:parse-fn Integer/parseInt ;;doesn't work
     :default 600]])
 
 (defn process-messages [db store & {:keys [folder max-messages] :or {folder "INBOX"}}]
@@ -49,7 +51,7 @@
       (when (and (first messages) (or (not max-messages) (< index max-messages)))
         (let [message (first messages)
               uid (clojure-mail.message/uid message)
-              name-address-maps (gmail-contacts-cj.core/message-name-address-map-list message)]
+              name-address-maps (stmp-contacts-cj.core/message-name-address-map-list message)]
           (assert (not (= uid last-uid)))
           (do
             ;;TODO verbosity level
@@ -72,7 +74,7 @@
       
       (let [max-results (:max-results (:options args))
             pass (slurp "pass")
-            gstore (gmail/store "erjoalgo@gmail.com" pass)]
+            gstore (clojure-mail.gmail/store "erjoalgo@gmail.com" pass)]
         
                                         ;(db/ensure-tables-exist db/db :drop true)
         (db/ensure-tables-exist db/db)
@@ -81,5 +83,5 @@
 ;;(def gstore (gmail/store "erjoalgo@gmail.com" (slurp "pass")))
 
 ;; Local Variables:
-;; compile-command: "lein run -- -m 4"
+;; compile-command: "lein run -- -m 100 --db ~/.smtp-contacts.db -e erjoalgo@gmail.com"
 ;; End:
