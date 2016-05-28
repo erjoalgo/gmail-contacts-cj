@@ -11,3 +11,4 @@ pom.xml.asc
 .hg/
 pass
 gmail-contacts.db
+src/smtp_contacts_cj/debug-repl.clj
