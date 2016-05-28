@@ -31,9 +31,6 @@
   (:max_msguid (first
                 (j/query db "select max(msguid) as max_msguid from msguids"))))
 
-(defmacro unless [test & body]
-  `(when (not ~test) ~@body))
-
 (defn last-uid-validity  [db]
   (:uid_validity
    (first
@@ -47,7 +44,7 @@
 
 (defn update-uid-validity-if-changed! [db current-validity]
   (let [last-validity (last-uid-validity db)]
-    (unless (= last-validity current-validity)
+    (when-not (= last-validity current-validity)
             (update-uid-validity! db current-validity)
             last-validity)))
 
