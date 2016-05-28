@@ -11,10 +11,6 @@
    )
   (:gen-class))
 
-
-
-
-
 (defn message-name-address-map-list [message]
   ";=> ({:address \"ealfonso@cmu.edu\", :name \"my name\"} {:address \"notification+bla-bla@facebookmail.com\", :name \"Facebook\"})"
   (apply concat (map #(% message)
@@ -23,16 +19,18 @@
                       clojure-mail.message/cc
                       clojure-mail.message/bcc])))
 
+(def default-max 600)
 (def cli-options
   [["-e" "--email EMAIL" "email address"
     :default "erjoalgo@gmail.com"]
    ["-d" "--db DB" "path to sqlite db"
     ;:default "resources/smtp-contacts.db"]]
     :default (format "%s/.smtp-contacts.db" (System/getenv "HOME"))]
-  ["-m" "--max-results MAX" "max results to fetch, default 600, 0 for infinite"
+   ["-m" "--max-results MAX" (format "max results to fetch, default %d, 0 for infinite"
+                                     default-max)
     ;:parse-fn Integer/parseInt 
     :parse-fn #(Integer/parseInt %)
-    :default 600]])
+    :default default-max]])
 
 (defn process-messages [db store & {:keys [folder max-messages] :or {folder "INBOX"}}]
   (let [last-uid (db/last-known-uid db)
@@ -86,7 +84,7 @@
             db (db/sqlite-db-connection-for-file db-filename)
             gstore (clojure-mail.gmail/store email pass)]
         
-                                        ;(db/ensure-tables-exist db/db :drop true)
+        ;;(db/ensure-tables-exist db/db :drop true)
         (db/ensure-tables-exist db)
         (process-messages db gstore :max-messages (if-not (= 0 max-results) max-results))))))
 
