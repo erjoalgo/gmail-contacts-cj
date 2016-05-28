@@ -1,10 +1,11 @@
-(ns stmp-contacts-cj.core
+(ns smtp-contacts-cj.core
   (:require
-   [clojure-mail.core]
+   ;[clojure-mail]
+   [clojure-mail.gmail :as gmail]
    ;[clojure-mail.core :refer :all]
    ;[clojure-mail.message :refer (read-message)]
    ;[clojure-mail.message :as message]
-   [stmp-contacts-cj.db :as db]
+   [smtp-contacts-cj.db :as db]
    [clojure.tools.cli :refer [parse-opts]]
    [clojure.tools.logging :as log]
    )
@@ -23,9 +24,14 @@
                       clojure-mail.message/bcc])))
 
 (def cli-options
-  [["-m" "--max-results MAX" "max results to fetch, default 600, 0 for infinite"
-    parse-fn #(Integer/parseInt %)
-    ;:parse-fn Integer/parseInt ;;doesn't work
+  [["-e" "--email EMAIL" "email address"
+    :default "erjoalgo@gmail.com"]
+   ["-d" "--db DB" "path to sqlite db"
+    ;:default "resources/smtp-contacts.db"]]
+    :default (format "%s/.smtp-contacts.db" (System/getenv "HOME"))]
+  ["-m" "--max-results MAX" "max results to fetch, default 600, 0 for infinite"
+    ;:parse-fn Integer/parseInt 
+    :parse-fn #(Integer/parseInt %)
     :default 600]])
 
 (defn process-messages [db store & {:keys [folder max-messages] :or {folder "INBOX"}}]
@@ -51,7 +57,7 @@
       (when (and (first messages) (or (not max-messages) (< index max-messages)))
         (let [message (first messages)
               uid (clojure-mail.message/uid message)
-              name-address-maps (stmp-contacts-cj.core/message-name-address-map-list message)]
+              name-address-maps (smtp-contacts-cj.core/message-name-address-map-list message)]
           (assert (not (= uid last-uid)))
           (do
             ;;TODO verbosity level
@@ -73,12 +79,16 @@
           (println (:errors args)))
       
       (let [max-results (:max-results (:options args))
+            db-filename (:db (:options args))
+            email (:email (:options args))
             pass (slurp "pass")
-            gstore (clojure-mail.gmail/store "erjoalgo@gmail.com" pass)]
+
+            db (db/sqlite-db-connection-for-file db-filename)
+            gstore (clojure-mail.gmail/store email pass)]
         
                                         ;(db/ensure-tables-exist db/db :drop true)
-        (db/ensure-tables-exist db/db)
-        (process-messages db/db gstore :max-messages (if-not (= 0 max-results) max-results))))))
+        (db/ensure-tables-exist db)
+        (process-messages db gstore :max-messages (if-not (= 0 max-results) max-results))))))
 
 ;;(def gstore (gmail/store "erjoalgo@gmail.com" (slurp "pass")))
 
