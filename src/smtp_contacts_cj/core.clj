@@ -6,6 +6,7 @@
    ;[clojure-mail.message :refer (read-message)]
    ;[clojure-mail.message :as message]
    [smtp-contacts-cj.db :as db]
+   [smtp-contacts-cj.util :refer [crop-string read-password]]
    [clojure.tools.cli :refer [parse-opts]]
    [clojure.tools.logging :as log]
    )
@@ -29,16 +30,20 @@
                                      default-max)
     :parse-fn #(Integer/parseInt %)
     :default default-max]
-   ["-p" "--passwd-file PASSWD_FN" "path to file containing app specific pass"]])
+   ["-p" "--passwd-file PASSWD_FN" "path to file containing app specific pass"]
+   ["-n" "--newline" "flag to insert newlines instead of \\r" :default false]])
 
-(defn process-messages [db store & {:keys [folder max-messages] :or {folder "INBOX"}}]
+
+
+(defn process-messages [db store & {:keys [folder max-messages newline] :or {folder "INBOX"}}]
   (let [last-uid (db/last-known-uid db)
         messages (clojure-mail.core/all-messages store folder
                                                  :since-uid (and last-uid (+ 1 last-uid))
                                                  :oldest-first true)
         current-uid-validity (clojure-mail.core/get-folder-uid-validity
                               (clojure-mail.core/get-folder store folder))
-        index 0]
+        total-message-count (count messages)
+        ]
     (log/debugf "current, last validity: %s, %s\n" current-uid-validity
                 (db/last-uid-validity db))
     (db/update-uid-validity-if-changed! db current-uid-validity)
@@ -48,27 +53,29 @@
     (assert (or (not (first messages))
                 (empty? (rest messages))
                 (not last-uid)
-                (< last-uid (clojure-mail.message/uid (first messages)) )))
+                (< last-uid (clojure-mail.message/uid (first messages)))))
     (loop [messages messages
            index 1]
       (when (and (first messages) (or (not max-messages) (< index max-messages)))
         (let [message (first messages)
               uid (clojure-mail.message/uid message)
-              name-address-maps (smtp-contacts-cj.core/message-name-address-map-list message)]
+              name-address-maps (message-name-address-map-list message)]
           (assert (not (= uid last-uid)))
           (do
             ;;TODO verbosity level
-            (printf "\ron message %d (uid: %d, date: %s, subject: %s)"
-                    index uid
-                    (clojure-mail.message/date-sent message)
-                    (clojure-mail.message/subject message))
+            (printf "%s%d/%d (uid %d) %s : '%s...' on %s"
+                    (if newline "\n" "\r")
+                    index total-message-count
+                    uid
+                    (:name (first (clojure-mail.message/from message)))
+                    (crop-string 50 (clojure-mail.message/subject message))
+                    (.format
+                     (java.text.SimpleDateFormat. "E dd.MM.yyyy")
+                     (clojure-mail.message/date-sent message)))
             (flush))
           (db/insert-name-address-to-db! db name-address-maps)
           (db/store-uid! db uid))
         (recur (rest messages) (+ 1 index))))))
-
-(defn read-password [ & {:keys [prompt] :or {prompt "Password:"}}]
-  (String/valueOf (.readPassword (System/console) prompt nil)))
   
     
 (defn -main
@@ -84,6 +91,7 @@
             db-filename (:db opts)
             email (:email opts)
             passwd-file (:passwd-file opts)
+            newline (:newline opts)
             pass (if passwd-file (slurp passwd-file) (read-password :prompt "enter app specific pass: "))
 
             db (db/sqlite-db-connection-for-file db-filename)
@@ -91,7 +99,9 @@
         
         ;;(db/ensure-tables-exist db/db :drop true)
         (db/ensure-tables-exist db)
-        (process-messages db gstore :max-messages (if-not (= 0 max-results) max-results))))))
+        (process-messages db gstore
+                          :max-messages (if-not (= 0 max-results) max-results)
+                          :newline newline)))))
 
 
 
