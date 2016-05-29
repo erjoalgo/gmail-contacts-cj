@@ -24,13 +24,12 @@
   [["-e" "--email EMAIL" "email address"
     :default "erjoalgo@gmail.com"]
    ["-d" "--db DB" "path to sqlite db"
-    ;:default "resources/smtp-contacts.db"]]
     :default (format "%s/.smtp-contacts.db" (System/getenv "HOME"))]
    ["-m" "--max-results MAX" (format "max results to fetch, default %d, 0 for infinite"
                                      default-max)
-    ;:parse-fn Integer/parseInt 
     :parse-fn #(Integer/parseInt %)
-    :default default-max]])
+    :default default-max]
+   ["-p" "--passwd-file PASSWD_FN" "path to file containing app specific pass"]])
 
 (defn process-messages [db store & {:keys [folder max-messages] :or {folder "INBOX"}}]
   (let [last-uid (db/last-known-uid db)
@@ -68,6 +67,10 @@
           (db/store-uid! db uid))
         (recur (rest messages) (+ 1 index))))))
 
+(defn read-password [ & {:keys [prompt] :or {prompt "Password:"}}]
+  (String/valueOf (.readPassword (System/console) prompt nil)))
+  
+    
 (defn -main
   "fetch new mail, extact and store contacts"
   [& args]
@@ -76,10 +79,12 @@
       (do (println (:summary args))
           (println (:errors args)))
       
-      (let [max-results (:max-results (:options args))
-            db-filename (:db (:options args))
-            email (:email (:options args))
-            pass (slurp "pass")
+      (let [opts (:options args)
+            max-results (:max-results opts)
+            db-filename (:db opts)
+            email (:email opts)
+            passwd-file (:passwd-file opts)
+            pass (if passwd-file (slurp passwd-file) (read-password :prompt "enter app specific pass: "))
 
             db (db/sqlite-db-connection-for-file db-filename)
             gstore (clojure-mail.gmail/store email pass)]
@@ -87,6 +92,8 @@
         ;;(db/ensure-tables-exist db/db :drop true)
         (db/ensure-tables-exist db)
         (process-messages db gstore :max-messages (if-not (= 0 max-results) max-results))))))
+
+
 
 ;;(def gstore (gmail/store "erjoalgo@gmail.com" (slurp "pass")))
 
