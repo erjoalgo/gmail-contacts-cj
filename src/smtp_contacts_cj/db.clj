@@ -12,7 +12,7 @@
            "create table if not exists msguids (msguid integer not null primary key)"
            "create table if not exists uid_validity (uid_validity integer not null primary key)"
            "create table if not exists addresses (address text not null primary key)"
-           "create table if not exists names (name text not null, address text not null, foreign key (address) references addresses(address))"
+           "create table if not exists names (name text not null, address text not null unique, foreign key (address) references addresses(address))"
            ]
 
           ["drop table if exists msguids"
