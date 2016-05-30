@@ -12,3 +12,4 @@ pom.xml.asc
 pass
 gmail-contacts.db
 src/smtp_contacts_cj/debug-repl.clj
+resources/smtp-contacts.db
