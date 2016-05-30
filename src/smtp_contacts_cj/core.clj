@@ -107,6 +107,8 @@
 
 ;;(def gstore (gmail/store "erjoalgo@gmail.com" (slurp "pass")))
 
+;;(def inbox (clojure-mail.core/open-folder gstore "inbox" :readonly))
+
 ;; Local Variables:
 ;; compile-command: "lein run -- -m 100 --db ~/.smtp-contacts.db -e erjoalgo@gmail.com"
 ;; End:
