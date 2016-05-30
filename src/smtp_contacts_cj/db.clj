@@ -11,14 +11,12 @@
           [
            "create table if not exists msguids (msguid integer not null primary key)"
            "create table if not exists uid_validity (uid_validity integer not null primary key)"
-           "create table if not exists addresses (address text not null primary key)"
-           "create table if not exists names (name text not null, address text not null unique, foreign key (address) references addresses(address))"
+           "create table if not exists contacts (name text, address text not null unique)"
            ]
 
           ["drop table if exists msguids"
            "drop table if exists uid_validity"
-           "drop table if exists addresses"
-           "drop table if exists names"])]
+           "drop table if exists contacts"])]
     (log/debugf "running queries: %s" create-queries )
     (dorun (map (partial j/execute! db) create-queries))))
 
@@ -51,12 +49,9 @@
 (defn insert-name-address-to-db! [db name-address-map-list]
   (assert (every? :address name-address-map-list))
   (let [address-list (map :address  name-address-map-list)
-        statement (apply vector "insert or ignore into addresses values (?)"
+        statement (apply vector "insert or ignore into contacts values (?)"
                          (map vector address-list))]
-    (j/execute! db statement {:multi? true}))
-  (j/insert-multi! db "names"
-                   ;;name can't be null for sql
-                   (filter :name name-address-map-list)))
+    (j/execute! db statement {:multi? true})))
 
 (defn sqlite-db-connection-for-file [db-filename]
   {:classname   "org.sqlite.JDBC"
