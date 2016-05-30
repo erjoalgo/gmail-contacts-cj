@@ -3,8 +3,6 @@
   (:require [clojure.java.jdbc :as j]
             [clojure.tools.logging :as log]))
 
-
-
 (defn ensure-tables-exist [db & {:keys [drop]}]
   (let [create-queries
         (if-not drop
@@ -19,7 +17,6 @@
            "drop table if exists contacts"])]
     (log/debugf "running queries: %s" create-queries )
     (dorun (map (partial j/execute! db) create-queries))))
-
 
 (defn store-uid! [db uid]
   (j/insert! db "msguids" ["msguid"] [uid]))
@@ -49,8 +46,8 @@
 (defn insert-name-address-to-db! [db name-address-map-list]
   (assert (every? :address name-address-map-list))
   (let [address-list (map :address  name-address-map-list)
-        statement (apply vector "insert or ignore into contacts values (?)"
-                         (map vector address-list))]
+        statement (apply vector "insert or ignore into contacts values (?, ?)"
+                         name-address-map-list)]
     (j/execute! db statement {:multi? true})))
 
 (defn sqlite-db-connection-for-file [db-filename]
