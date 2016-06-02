@@ -21,6 +21,7 @@
                       clojure-mail.message/bcc])))
 
 (def default-max 600)
+
 (def cli-options
   [["-e" "--email EMAIL" "email address"
     :default "erjoalgo@gmail.com"]
@@ -31,11 +32,10 @@
     :parse-fn #(Integer/parseInt %)
     :default default-max]
    ["-p" "--passwd-file PASSWD_FN" "path to file containing app specific pass"]
-   ["-n" "--newline" "flag to insert newlines instead of \\r" :default false]])
+   ["-n" "--newline" "flag to insert newlines instead of \\r" :default false]
+   ["-q" "--quiet" "quiet" :default false]])
 
-
-
-(defn process-messages [db store & {:keys [folder max-messages newline] :or {folder "INBOX"}}]
+(defn process-messages [db store & {:keys [folder max-messages newline quiet] :or {folder "INBOX"}}]
   (let [last-uid (db/last-known-uid db)
         messages (clojure-mail.core/all-messages store folder
                                                  :since-uid (and last-uid (+ 1 last-uid))
@@ -63,20 +63,21 @@
           (assert (not (= uid last-uid)))
           (do
             ;;TODO verbosity level
-            (printf "%s%d/%d (uid %d) %s : '%s...' on %s"
-                    (if newline "\n" "\r")
-                    index total-message-count
-                    uid
-                    (:name (first (clojure-mail.message/from message)))
-                    (crop-string 50 (clojure-mail.message/subject message))
-                    (.format
-                     (java.text.SimpleDateFormat. "E dd.MM.yyyy")
-                     (clojure-mail.message/date-sent message)))
+            (if quiet
+              (printf "\r%d/%d" index total-message-count)
+              (printf "%s%d/%d (uid %d) %s : '%s...' on %s"
+                      (if newline "\n" "\r")
+                      index total-message-count
+                      uid
+                      (:name (first (clojure-mail.message/from message)))
+                      (crop-string 50 (clojure-mail.message/subject message))
+                      (.format
+                       (java.text.SimpleDateFormat. "E dd.MM.yyyy")
+                       (clojure-mail.message/date-sent message))))
             (flush))
           (db/insert-name-address-to-db! db name-address-maps)
           (db/store-uid! db uid))
         (recur (rest messages) (+ 1 index))))))
-  
     
 (defn -main
   "fetch new mail, extact and store contacts"
@@ -92,6 +93,7 @@
             email (:email opts)
             passwd-file (:passwd-file opts)
             newline (:newline opts)
+            quiet (:quiet opts)
             pass (if passwd-file (slurp passwd-file) (read-password :prompt "enter app specific pass: "))
 
             db (db/sqlite-db-connection-for-file db-filename)
@@ -101,13 +103,10 @@
         (db/ensure-tables-exist db)
         (process-messages db gstore
                           :max-messages (if-not (= 0 max-results) max-results)
-                          :newline newline)))))
+                          :newline newline
+                          :quiet quiet)))))
 
 
-
-;;(def gstore (gmail/store "erjoalgo@gmail.com" (slurp "pass")))
-
-;;(def inbox (clojure-mail.core/open-folder gstore "inbox" :readonly))
 
 ;; Local Variables:
 ;; compile-command: "lein run -- -m 100 --db ~/.smtp-contacts.db -e erjoalgo@gmail.com"
