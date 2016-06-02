@@ -19,6 +19,7 @@
   (let* ((records (sqlite3-query
 			     smtp-contacts-db-fn
 			     "select name, address from contacts"))
+	 ;;this works because name comes first, so (name . address)
 	(names-emails-alist (mapcar (lambda (record) (mapcar 'cdr record))
 				    records))
 	name-or-email)
@@ -28,7 +29,6 @@
 			 names-emails-alist nil t))
     (let ((cell (assoc-string name-or-email names-emails-alist t)))
 	  (or (cadr cell) name-or-email))))
-    
 
 (defun sqlite3-query (fn query)
   "returns an alist (col-name . col-value) for each record. example
@@ -37,11 +37,12 @@
   (let ((out (shell-command-to-string
 	      (format "sqlite3 -line %s \"%s\"" fn query))))
     (loop with start = 0
-	  while (string-match "\\(^[[:space:]]*\\([a-z]+\\) = \\(.*\\)\n\\)+" out start)
+					;don't use [:space:], it is buffer-specific and may cause a crash
+	  while (string-match "\\(^[ ]*\\([a-z]+\\) = \\(.*\\)\n\\)+" out start)
 	  do (setf start (match-end 0))
 	  collect (mapcar (lambda (col-val) (cons (second col-val) (third col-val)))
 			  (s-match-strings-all
-			   "^[[:space:]]*\\([a-z]+\\) = \\(.*\\)" (match-string 0 out))))))
+			   "^[ ]*\\([a-z]+\\) = \\(.*\\)" (match-string 0 out))))))
 
 (defun smtp-contacts-refresh ()
   (interactive)
@@ -56,4 +57,3 @@
 
 (with-eval-after-load "message"
   (define-key message-mode-map (kbd "\C-ci") 'smtp-contacts-insert-contact))
-
