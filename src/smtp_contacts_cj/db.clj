@@ -40,6 +40,8 @@
 (defn update-uid-validity-if-changed! [db current-validity]
   (let [last-validity (last-uid-validity db)]
     (when-not (= last-validity current-validity)
+      (log/warnf "validity changed. need to drop all known message ids. (old, new) = (%d, %d)"
+                 last-validity current-validity )
             (update-uid-validity! db current-validity)
             last-validity)))
 
