@@ -23,33 +23,45 @@
 
 (defn last-known-uid [db]
   ;;((keyword "max(msguid)") (first
-  (:max_msguid (first
-                (j/query db "select max(msguid) as max_msguid from msguids"))))
+  (-> db
+      (j/query "select max(msguid) as max_msguid from msguids")
+      first
+      :max_msguid))
 
 (defn last-uid-validity  [db]
   (:uid_validity
    (first
     (j/query db "select uid_validity from uid_validity"))))
 
+;(sql/execute! db ["INSERT INTO fruit ( name, appearance, cost ) VALUES ( ?, ?, ? )"
+                  ;"Apple" "Green" 75])
+
 (defn update-uid-validity!  [db new-validity]
   "drop all known msguids, update uid_validity single row table"
-  (j/execute! db
-           "delete from uid_validity; delete from msguids; insert into uid_validity values (?);"
-           new-validity))
+  (j/execute! db "delete from uid_validity")
+  (j/execute! db "delete from msguids")
+  (j/execute! db ["insert into uid_validity values (?)" new-validity]))
+
+(defn count-messages [db]
+  (-> db (j/query "select count(msguid) as count_msguid from msguids")
+      first :count_msguid))
 
 (defn update-uid-validity-if-changed! [db current-validity]
   (let [last-validity (last-uid-validity db)]
     (when-not (= last-validity current-validity)
-      (log/warnf "validity changed. need to drop all known message ids. (old, new) = (%d, %d)"
-                 last-validity current-validity )
-            (update-uid-validity! db current-validity)
-            last-validity)))
+      (log/warnf "validity changed. need to drop all (%d) known message ids. (old, new) = (%d, %d)"
+                 (count-messages db)
+                 last-validity current-validity)
+      (update-uid-validity! db current-validity)
+      last-validity)))
 
 (defn insert-name-address-to-db! [db name-address-map-list]
   (assert (every? :address name-address-map-list))
   (let [address-list (map :address  name-address-map-list)
-        statement (apply vector "insert or ignore into contacts values (?, ?)"
-                         name-address-map-list)]
+        statement (apply vector
+                         (str "insert or ignore into contacts (name, address)"
+                              "values (?, ?)")
+                         (map (juxt :name :address) name-address-map-list))]
     (j/execute! db statement {:multi? true})))
 
 (defn sqlite-db-connection-for-file [db-filename]
