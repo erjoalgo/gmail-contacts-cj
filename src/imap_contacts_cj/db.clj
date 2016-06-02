@@ -35,7 +35,6 @@
 
 ;(sql/execute! db ["INSERT INTO fruit ( name, appearance, cost ) VALUES ( ?, ?, ? )"
                   ;"Apple" "Green" 75])
-
 (defn update-uid-validity!  [db new-validity]
   "drop all known msguids, update uid_validity single row table"
   (j/execute! db "delete from uid_validity")
@@ -48,6 +47,8 @@
 
 (defn update-uid-validity-if-changed! [db current-validity]
   (let [last-validity (last-uid-validity db)]
+      (log/debugf "current, last validity: %s, %s\n"
+              current-validity last-validity)
     (when-not (= last-validity current-validity)
       (log/warnf "validity changed. need to drop all (%d) known message ids. (old, new) = (%d, %d)"
                  (count-messages db)

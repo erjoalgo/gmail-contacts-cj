@@ -6,19 +6,11 @@
    ;[clojure-mail.message :refer (read-message)]
    ;[clojure-mail.message :as message]
    [imap-contacts-cj.db :as db]
-   [imap-contacts-cj.util :refer [crop-string read-password]]
+   [imap-contacts-cj.util :refer [crop-string read-password message-name-address-map-list]]
    [clojure.tools.cli :refer [parse-opts]]
    [clojure.tools.logging :as log]
    )
   (:gen-class))
-
-(defn message-name-address-map-list [message]
-  ";=> ({:address \"ealfonso@cmu.edu\", :name \"my name\"} {:address \"notification+bla-bla@facebookmail.com\", :name \"Facebook\"})"
-  (apply concat (map #(% message)
-                     [clojure-mail.message/to
-                      clojure-mail.message/from
-                      clojure-mail.message/cc
-                      clojure-mail.message/bcc])))
 
 (def default-max 600)
 
@@ -35,49 +27,49 @@
    ["-n" "--newline" "flag to insert newlines instead of \\r" :default false]
    ["-q" "--quiet" "quiet" :default false]])
 
+(defn update-console-progress [message index total-message-count short]
+  (if short
+    (printf "\r%d/%d" index total-message-count)
+    (printf "%s%d/%d %s : '%s...' on %s"
+            (if newline "\n" "\r")
+            index total-message-count
+            (:name (first (clojure-mail.message/from message)))
+            (crop-string 50 (clojure-mail.message/subject message))
+            (.format
+             (java.text.SimpleDateFormat. "E dd.MM.yyyy")
+             (clojure-mail.message/date-sent message))))
+  (flush))
+
 (defn process-messages [db store & {:keys [folder max-messages newline quiet] :or {folder "INBOX"}}]
+
+  (let [current-uid-validity (clojure-mail.core/get-folder-uid-validity
+                                (clojure-mail.core/get-folder store folder))]
+    (db/update-uid-validity-if-changed! db current-uid-validity))
+  
   (let [last-uid (db/last-known-uid db)
         messages (clojure-mail.core/all-messages store folder
                                                  :since-uid (and last-uid (+ 1 last-uid))
                                                  :oldest-first true)
-        current-uid-validity (clojure-mail.core/get-folder-uid-validity
-                              (clojure-mail.core/get-folder store folder))
-        total-message-count (count messages)
-        ]
-    (log/debugf "current, last validity: %s, %s\n" current-uid-validity
-                (db/last-uid-validity db))
-    (db/update-uid-validity-if-changed! db current-uid-validity)
-    (log/debugf "count: %d, first msg uid: %s, last uid: %s\n" (count messages)
-                (clojure-mail.message/uid (first messages))
-                last-uid)
-    (assert (or (not (first messages))
-                (empty? (rest messages))
-                (not last-uid)
-                (< last-uid (clojure-mail.message/uid (first messages)))))
-    (loop [messages messages
-           index 1]
-      (when (and (first messages) (or (not max-messages) (< index max-messages)))
+        total-message-count (count messages)]
+    
+    ;;make sure we're getting messages in ascending order
+    (assert (or (nil? last-uid) (-> messages rest empty?) 
+                (->> messages first clojure-mail.message/uid (< last-uid))))
+    
+    (loop [messages messages index 1]
+      (when (and (first messages)
+                 (or (not max-messages) (< index max-messages)))
         (let [message (first messages)
               uid (clojure-mail.message/uid message)
               name-address-maps (message-name-address-map-list message)]
-          (assert (not (= uid last-uid)))
-          (do
-            ;;TODO verbosity level
-            (if quiet
-              (printf "\r%d/%d" index total-message-count)
-              (printf "%s%d/%d (uid %d) %s : '%s...' on %s"
-                      (if newline "\n" "\r")
-                      index total-message-count
-                      uid
-                      (:name (first (clojure-mail.message/from message)))
-                      (crop-string 50 (clojure-mail.message/subject message))
-                      (.format
-                       (java.text.SimpleDateFormat. "E dd.MM.yyyy")
-                       (clojure-mail.message/date-sent message))))
-            (flush))
+          
+          (update-console-progress message index total-message-count quiet)
           (db/insert-name-address-to-db! db name-address-maps)
           (db/store-uid! db uid))
         (recur (rest messages) (+ 1 index))))))
+
+
+
     
 (defn -main
   "fetch new mail, extact and store contacts"
