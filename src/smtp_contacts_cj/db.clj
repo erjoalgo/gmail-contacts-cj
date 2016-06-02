@@ -1,4 +1,4 @@
-(ns smtp-contacts-cj.db
+(ns imap-contacts-cj.db
   ;;(:require [clojure.java.jdbc :refer [query execute! insert!]])
   (:require [clojure.java.jdbc :as j]
             [clojure.tools.logging :as log]))

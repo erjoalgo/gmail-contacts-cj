@@ -1,12 +1,12 @@
-(ns smtp-contacts-cj.core
+(ns imap-contacts-cj.core
   (:require
    ;[clojure-mail]
    [clojure-mail.gmail :as gmail]
    ;[clojure-mail.core :refer :all]
    ;[clojure-mail.message :refer (read-message)]
    ;[clojure-mail.message :as message]
-   [smtp-contacts-cj.db :as db]
-   [smtp-contacts-cj.util :refer [crop-string read-password]]
+   [imap-contacts-cj.db :as db]
+   [imap-contacts-cj.util :refer [crop-string read-password]]
    [clojure.tools.cli :refer [parse-opts]]
    [clojure.tools.logging :as log]
    )
@@ -26,7 +26,7 @@
   [["-e" "--email EMAIL" "email address"
     :default "erjoalgo@gmail.com"]
    ["-d" "--db DB" "path to sqlite db"
-    :default (format "%s/.smtp-contacts.db" (System/getenv "HOME"))]
+    :default (format "%s/.imap-contacts.db" (System/getenv "HOME"))]
    ["-m" "--max-results MAX" (format "max results to fetch, default %d, 0 for infinite"
                                      default-max)
     :parse-fn #(Integer/parseInt %)
@@ -109,5 +109,5 @@
 
 
 ;; Local Variables:
-;; compile-command: "lein run -- -m 100 --db ~/.smtp-contacts.db -e erjoalgo@gmail.com"
+;; compile-command: "lein run -- -m 100 --db ~/.imap-contacts.db -e erjoalgo@gmail.com"
 ;; End:

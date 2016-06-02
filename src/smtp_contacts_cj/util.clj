@@ -1,4 +1,4 @@
-(ns smtp-contacts-cj.util)
+(ns imap-contacts-cj.util)
   
 '(defn parse-message-date [date-str]
   "parse a date string"

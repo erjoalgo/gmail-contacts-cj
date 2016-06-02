@@ -1,23 +1,23 @@
-(defvar smtp-contacts-db-fn (f-expand "~/.smtp-contacts.db"))
+(defvar imap-contacts-db-fn (f-expand "~/.imap-contacts.db"))
 
-(defvar smtp-standalone-jar-path
-  (f-expand "~/bin/smtp-contacts-cj-0.1.0-SNAPSHOT-standalone.jar"))
+(defvar imap-contacts-standalone-jar-path
+  (f-expand "~/bin/imap-contacts-cj-0.1.0-SNAPSHOT-standalone.jar"))
 
-(defun smtp-contacts-insert-contact ()
+(defun imap-contacts-insert-contact ()
   (interactive)
-  (insert (smtp-contacts-name-or-address-completing-read)))
+  (insert (imap-contacts-name-or-address-completing-read)))
 
-(defun smtp-addresses-completing-read ()
+(defun imap-addresses-completing-read ()
   (completing-read "start entering desired  address or name: "
-		   (smtp-contacts-get-addresses) nil t))
+		   (imap-contacts-get-addresses) nil t))
 
-(defun smtp-contacts-get-addresses ()
-  (mapcar 'cdar (sqlite3-query smtp-contacts-db-fn "select address from addresses")))
+(defun imap-contacts-get-addresses ()
+  (mapcar 'cdar (sqlite3-query imap-contacts-db-fn "select address from addresses")))
 
-(defun smtp-contacts-name-or-address-completing-read ()
+(defun imap-contacts-name-or-address-completing-read ()
   "complete by either name or address"
   (let* ((records (sqlite3-query
-			     smtp-contacts-db-fn
+			     imap-contacts-db-fn
 			     "select name, address from contacts"))
 	 ;;this works because name comes first, so (name . address)
 	(names-emails-alist (mapcar (lambda (record) (mapcar 'cdr record))
@@ -44,16 +44,16 @@
 			  (s-match-strings-all
 			   "^[ ]*\\([a-z]+\\) = \\(.*\\)" (match-string 0 out))))))
 
-(defun smtp-contacts-refresh ()
+(defun imap-contacts-refresh ()
   (interactive)
-  ;;"java -jar smtp-contacts-cj-0.1.0-standalone.jar [args]"
-  (start-process "smtp-contacts-refresh"
-		 "*smtp-contacts-refresh*"
-		 "java" "-jar" smtp-standalone-jar-path
+  ;;"java -jar imap-contacts-cj-0.1.0-standalone.jar [args]"
+  (start-process "imap-contacts-refresh"
+		 "*imap-contacts-refresh*"
+		 "java" "-jar" imap-standalone-jar-path
 		 "-m" "200"
-		 "--db" smtp-contacts-db-fn))
+		 "--db" imap-contacts-db-fn))
 
-(add-hook 'gnus-summary-mode-hook 'smtp-contacts-refresh)
+(add-hook 'gnus-summary-mode-hook 'imap-contacts-refresh)
 
 (with-eval-after-load "message"
-  (define-key message-mode-map (kbd "\C-ci") 'smtp-contacts-insert-contact))
+  (define-key message-mode-map (kbd "\C-ci") 'imap-contacts-insert-contact))
