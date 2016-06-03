@@ -25,7 +25,16 @@
     :default default-max]
    ["-p" "--passwd-file PASSWD_FN" "path to file containing app specific pass"]
    ["-n" "--newline" "flag to insert newlines instead of \\r" :default false]
-   ["-q" "--quiet" "quiet" :default false]])
+   ["-q" "--quiet" "quiet" :default false]
+   ["-s" "--imap-protocol-host-port IMAP_SERVER"
+    "url for for imap server including protocol, host, port, example 'https://imap.gmail.com:993'"
+    :parse-fn #(let [match (re-matches #"(https?)://([a-z.]+):([0-9]+)" %)]
+                  (if-not match
+                    (throw (Exception. "invalid imap server string"))
+                      (let [[_ protocol host port] match
+                            port (Integer/parseInt port)]
+                        [protocol host port])))
+    :default "https://imap.gmail.com:993"]])
 
 (defn update-console-progress [message index total-message-count short]
   (if short
@@ -47,9 +56,10 @@
     (db/update-uid-validity-if-changed! db current-uid-validity))
   
   (let [last-uid (db/last-known-uid db)
-        messages (clojure-mail.core/all-messages store folder
-                                                 :since-uid (and last-uid (+ 1 last-uid))
-                                                 :oldest-first true)
+        messages (->> (and last-uid (+ 1 last-uid))
+                      (clojure-mail.core/all-messages store folder :since-uid )
+                      reverse)
+                                                 ;:oldest-first true)
         total-message-count (count messages)]
     
     ;;make sure we're getting messages in ascending order
@@ -89,11 +99,18 @@
             pass (if passwd-file (slurp passwd-file) (read-password :prompt "enter app specific pass: "))
 
             db (db/sqlite-db-connection-for-file db-filename)
-            gstore (clojure-mail.gmail/store email pass)]
+            
+            mail-store (let [[protocol imap-host imap-port] (:imap-protocol-host-port opts)
+                             protocol (case protocol
+                                        "http" "imap"
+                                        "https" "imaps")]
+                         ;;gstore (clojure-mail.gmail/store email pass) ;;gmail-specific
+                         ;(clojure-mail.core/store "imaps" ["imap.gmail.com" 993] email pass)
+                         (clojure-mail.core/store protocol [imap-host imap-port] email pass))]
         
         ;;(db/ensure-tables-exist db/db :drop true)
         (db/ensure-tables-exist db)
-        (process-messages db gstore
+        (process-messages db mail-store
                           :max-messages (if-not (= 0 max-results) max-results)
                           :newline newline
                           :quiet quiet)))))
@@ -101,5 +118,5 @@
 
 
 ;; Local Variables:
-;; compile-command: "lein run -- -m 100 --db ~/.imap-contacts.db -e erjoalgo@gmail.com"
+;; compile-command: "lein run -- -m 100 --db ~/.imap-contacts.db -e erjoalgo@gmail.com -p ~/repos/imap-contacts-cj/pass -s https://imap.gmail.com:993"
 ;; End:
