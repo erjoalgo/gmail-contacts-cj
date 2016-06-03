@@ -34,7 +34,7 @@
                       (let [[_ protocol host port] match
                             port (Integer/parseInt port)]
                         [protocol host port])))
-    :default "https://imap.gmail.com:993"]])
+    :default ["https" "imap.gmail.com" 993]]])
 
 (defn update-console-progress [message index total-message-count short]
   (if short
