@@ -9,6 +9,7 @@
    [imap-contacts-cj.util :refer [crop-string read-password message-name-address-map-list]]
    [clojure.tools.cli :refer [parse-opts]]
    [clojure.tools.logging :as log]
+   [clojure.java.io :as io ]
    )
   (:gen-class))
 
@@ -18,7 +19,7 @@
   [["-e" "--email EMAIL" "email address"
     :default "erjoalgo@gmail.com"]
    ["-d" "--db DB" "path to sqlite db"
-    :default (format "%s/.imap-contacts.db" (System/getenv "HOME"))]
+    :default (-> (clojure.java.io/file (System/getenv "HOME") ".imap-contacts.db") .toString)]
    ["-m" "--max-results MAX" (format "max results to fetch, default %d, 0 for infinite"
                                      default-max)
     :parse-fn #(Integer/parseInt %)
