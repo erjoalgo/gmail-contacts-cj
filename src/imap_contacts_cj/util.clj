@@ -13,8 +13,7 @@
 
 (defn message-name-address-map-list [message]
   ";=> ({:address \"ealfonso@cmu.edu\", :name \"my name\"} {:address \"notification+bla-bla@facebookmail.com\", :name \"Facebook\"})"
-  (apply concat (map #(% message)
-                     [clojure-mail.message/to
-                      clojure-mail.message/from
-                      clojure-mail.message/cc
-                      clojure-mail.message/bcc])))
+  (flatten ((juxt clojure-mail.message/to
+                  clojure-mail.message/from
+                  clojure-mail.message/cc
+                  clojure-mail.message/bcc) message)))
