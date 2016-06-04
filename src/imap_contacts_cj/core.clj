@@ -24,7 +24,7 @@
                                      default-max)
     :parse-fn #(Integer/parseInt %)
     :default default-max]
-   ["-p" "--passwd-file PASSWD_FN" "path to file containing app specific pass"]
+   ["-p" "--passwd-file PASSWD_FN" "path to file containing app specific pass. user is prompted if not provided"]
    ["-n" "--newline" "flag to insert newlines instead of \\r" :default false]
    ["-q" "--quiet" "quiet" :default false]
    ["-s" "--imap-protocol-host-port IMAP_SERVER"
@@ -62,48 +62,48 @@
   [s]
   (map vector (iterate inc 0) s))
 
-(defn process-messages [db store & {:keys [folder max-messages newline quiet batch-size]
-                                    :or {folder "INBOX"
+(defn process-messages [db store & {:keys [folder-name max-messages newline quiet batch-size]
+                                    :or {folder-name "INBOX"
                                          batch-size 100}}]
+  (let [inbox (clojure-mail.core/open-folder store folder-name :readonly)]
+    (let [current-uid-validity (.getUIDValidity inbox)]
+      (db/update-uid-validity-if-changed! db current-uid-validity))
 
-  (let [current-uid-validity (clojure-mail.core/get-folder-uid-validity
-                              (clojure-mail.core/get-folder store folder))]
-    (db/update-uid-validity-if-changed! db current-uid-validity))
+    (let [[smallest-uid largest-uid] (db/smallest-largest-known-uids db)
+          FIRST 1
+          LAST javax.mail.UIDFolder/LASTUID
+          echo #(doto % println)
+          messages (concat
+                    ;;newer than our newest message, most recent first
+                    (let [newer-messages (.getMessagesByUID inbox (if largest-uid (inc largest-uid) LAST) LAST)
+                          newest (first newer-messages)]
+                      ;;we might have to remove oldest message, which is always returned
+                      (if (and newest largest-uid (= largest-uid (clojure-mail.message/uid newest)))
+                        (rest newer-messages) newer-messages))
 
-  (let [[smallest-uid largest-uid] (db/smallest-largest-known-uids db)
-        messages (concat
-                  ;;newer than our newest message, most recent first
-                  (clojure-mail.core/all-messages store folder :start-uid (when largest-uid (inc largest-uid)))
-                  ;;older than our oldest message, most recent first
-                  (clojure-mail.core/all-messages store folder :end-uid (when smallest-uid (dec smallest-uid))))
-        messages (if (and (first messages)
-                          (= largest-uid (clojure-mail.message/uid (first messages))))
-                   ;;last message is always returned with javax.mail.UIDFolder/LASTUID,
-                   ;;but we may have seen it already
-                   (rest messages)
-                   messages)
+                    ;;older than our oldest message, most recent first
+                    (when-not  (= smallest-uid 1)
+                      (.getMessagesByUID inbox FIRST (if smallest-uid (dec smallest-uid) LAST))))
+          total-message-count (count messages)]
+      ;;make sure we're getting messages in ascending order
+      (assert (or (-> messages nnext nil?)
+                  (->> (take 2 messages) (map clojure-mail.message/uid) >)))
 
-
-        total-message-count (count messages)
-        ]
-
-    ;;make sure we're getting messages in ascending order
-    (assert (or (-> messages nnext nil?)
-                (-> (juxt first second) (map clojure-mail.message/uid) >)))
-
-    (doseq [[batch-number batch]
-            (indexed (pmap
-                      ;;map over each batch in parallel
-                      (partial map (juxt clojure-mail.message/uid message-name-address-map-list))
-                      (partition batch-size messages)))]
-      (printf "\r%d/%d" (* batch-size (inc batch-number)) total-message-count)
-      (flush)
-      (let [name-address-map-lists (flatten (map second batch))
-            uids (map first batch)]
-        (when-not  quiet (printf "flushing... %s\n" (pr-str uids)))
-        ;(throw (Exception. "invalid imap server string"))
-        (db/insert-name-address-to-db! db name-address-map-lists)
-        (db/store-uids! db uids)))))
+      (doseq [[batch-number batch]
+              (indexed (pmap
+                        ;;map over each batch in parallel
+                        (partial map (juxt clojure-mail.message/uid message-name-address-map-list))
+                        (partition batch-size
+                                   batch-size
+                                   nil
+                                   (take (or max-messages total-message-count) messages))))]
+        (printf "\r%d/%d" (* batch-size (inc batch-number)) total-message-count)
+        (flush)
+        (let [name-address-map-lists (flatten (map second batch))
+              uids (map first batch)]
+          (when-not  quiet (printf "flushing... %s\n" (pr-str uids)))
+          (db/insert-name-address-to-db! db name-address-map-lists)
+          (db/store-uids! db uids))))))
 
 (defn -main
   "fetch new mail, extact and store contacts"
@@ -135,7 +135,7 @@
         ;;(db/ensure-tables-exist db/db :drop true)
         (db/ensure-tables-exist db)
         (process-messages db mail-store
-                          :max-messages (if-not (= 0 max-results) max-results)
+                          :max-messages (when-not (= 0 max-results) max-results)
                           :newline newline
                           :quiet quiet)))))
 
