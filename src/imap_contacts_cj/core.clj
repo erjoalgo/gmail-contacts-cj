@@ -37,51 +37,64 @@
                         [protocol host port])))
     :default ["https" "imap.gmail.com" 993]]])
 
-(defn update-console-progress [message index total-message-count short]
+(defn echo-message [short total-message-count index message]
+  "print some info about the message and return it"
   (if short
     (printf "\r%d/%d" index total-message-count)
-    (printf "%s%d/%d %s : '%s...' on %s"
-            (if newline "\n" "\r")
-            index total-message-count
-            (:name (first (clojure-mail.message/from message)))
-            (crop-string 50 (clojure-mail.message/subject message))
-            (.format
-             (java.text.SimpleDateFormat. "E dd.MM.yyyy")
-             (clojure-mail.message/date-sent message))))
-  (flush))
+  (printf "%s%d/%d %s : '%s...' on %s"
+          (if newline "\n" "\r")
+          index total-message-count
+          (:name (first (clojure-mail.message/from message)))
+          (crop-string 50 (clojure-mail.message/subject message))
+          (.format
+           (java.text.SimpleDateFormat. "E dd.MM.yyyy")
+           (clojure-mail.message/date-sent message))))
+  (flush)
+  message)
 
-(defn process-messages [db store & {:keys [folder max-messages newline quiet] :or {folder "INBOX"}}]
+(defn process-messages [db store & {:keys [folder max-messages newline quiet batch-size]
+                                    :or {folder "INBOX"
+                                         batch-size 100}}]
 
   (let [current-uid-validity (clojure-mail.core/get-folder-uid-validity
-                                (clojure-mail.core/get-folder store folder))]
+                              (clojure-mail.core/get-folder store folder))]
     (db/update-uid-validity-if-changed! db current-uid-validity))
   
-  (let [last-uid (db/last-known-uid db)
-        messages (->> (and last-uid (+ 1 last-uid))
-                      (clojure-mail.core/all-messages store folder :since-uid )
-                      reverse)
-                                                 ;:oldest-first true)
-        total-message-count (count messages)]
+  (let [[smallest-uid largest-uid] (db/smallest-largest-known-uids db)
+        messages (concat
+                  ;;newer than our newest message, most recent first
+                  (clojure-mail.core/all-messages store folder :start-uid (when largest-uid (inc largest-uid)))
+                  ;;older than our oldest message, most recent first
+                  (clojure-mail.core/all-messages store folder :end-uid (when smallest-uid (dec smallest-uid))))
+        messages (if (and (first messages)
+                          (= largest-uid (clojure-mail.message/uid (first messages))))
+                   ;;last message is always returned with javax.mail.UIDFolder/LASTUID,
+                   ;;but we may have seen it already
+                   (rest messages)
+                   messages)
+
+
+        message-pipeline (if (and nil quiet)
+                                messages
+                                (map-indexed
+                                 (fn [i message]
+                                   (echo-message quiet (count messages) i message)
+                                   message) messages))
+        ]
     
     ;;make sure we're getting messages in ascending order
-    (assert (or (nil? last-uid) (-> messages rest empty?) 
-                (->> messages first clojure-mail.message/uid (< last-uid))))
+    (assert (or (-> messages nnext nil?)
+                (-> (juxt first second) (map clojure-mail.message/uid) >)))
     
-    (loop [messages messages index 1]
-      (when (and (first messages)
-                 (or (not max-messages) (< index max-messages)))
-        (let [message (first messages)
-              uid (clojure-mail.message/uid message)
-              name-address-maps (message-name-address-map-list message)]
-          
-          (update-console-progress message index total-message-count quiet)
-          (db/insert-name-address-to-db! db name-address-maps)
-          (db/store-uid! db uid))
-        (recur (rest messages) (+ 1 index))))))
+    (doseq [part (partition batch-size
+                            (map (juxt clojure-mail.message/uid message-name-address-map-list)
+                                 message-pipeline))]
+      (let [name-address-map-lists (flatten (map second part))
+            uids (map first part)]
+        (when-not  quiet (printf "flushing... %s\n" (pr-str uids)))
+        (db/insert-name-address-to-db! db name-address-map-lists)
+        (db/store-uids! db uids)))))
 
-
-
-    
 (defn -main
   "fetch new mail, extact and store contacts"
   [& args]

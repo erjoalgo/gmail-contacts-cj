@@ -18,15 +18,14 @@
     (log/debugf "running queries: %s" create-queries )
     (dorun (map (partial j/execute! db) create-queries))))
 
-(defn store-uid! [db uid]
-  (j/insert! db "msguids" ["msguid"] [uid]))
+(defn store-uids! [db uids]
+  (j/insert-multi! db "msguids" ["msguid"] (map vector uids)))
 
-(defn last-known-uid [db]
-  ;;((keyword "max(msguid)") (first
-  (-> db
-      (j/query "select max(msguid) as max_msguid from msguids")
-      first
-      :max_msguid))
+(defn smallest-largest-known-uids [db]
+  ;;((keyword "min(msguid)") (first
+  (map #(->> (format "select %s(msguid) as msguid from msguids" %)
+             (j/query db) first :msguid)
+       ["min" "max"]))
 
 (defn last-uid-validity  [db]
   (:uid_validity
