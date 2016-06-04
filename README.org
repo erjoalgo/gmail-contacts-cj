@@ -19,13 +19,13 @@ Provides additional emacs utility to enable completing read of email addresses b
 - Alternatively, use a standalone jar from the releases
 
 * Usage and options
- | Option                                    | Default                                                                     | Description                                                                                  |   |   |
- | -e, --email EMAIL                         | me@gmail.com                                                                | email address                                                                                |   |   |
- | -d, --db DB                               | /home/user/.imap-contacts.db                                                | path to sqlite db                                                                            |   |   |
- | -m, --max-results MAX                     | 600                                                                         | max results to fetch, default 600, 0 for infinite                                            |   |   |
- | -p, --passwd-file PASSWD_FN               | path to file containing app specific pass. user is prompted if not provided |                                                                                              |   |   |
- | -n, --newline                             |                                                                             | display one message per line instead of continuous progress indicator                                                                                    |   |   |
- | -q, --quiet                               | quiet                                                                       |                                                                                              |   |   |
- | -s, --imap-protocol-host-port IMAP_SERVER | ["https" "imap.gmail.com" 993]                                              | url for for imap server including protocol, host, port, example 'https://imap.gmail.com:993' |   |   |
+ | Option                                    | Default                        | Description                                                                                  |
+ | -e, --email EMAIL                         | me@gmail.com                   | email address                                                                                |
+ | -d, --db DB                               | ~/home/user/.imap-contacts.db~ | path to sqlite db                                                                            |
+ | -m, --max-results MAX                     | 600                            | max results to fetch, default 600, 0 for infinite                                            |
+ | -p, --passwd-file PASSWD_FN               |                                | path to file containing app specific pass. user is prompted if not provided                  |
+ | -n, --newline                             |                                | display one message per line instead of continuous progress indicator                        |
+ | -q, --quiet                               | quiet                          |                                                                                              |
+ | -s, --imap-protocol-host-port IMAP_SERVER | ["https" "imap.gmail.com" 993] | url for for imap server including protocol, host, port, example 'https://imap.gmail.com:993' |
 * Bugs
   This project depends on features of [[https://github.com/owainlewis/clojure-mail][clojure-mail]] unreleased as of this writing. A workaround is to clone the latest version from master, run ~lein install~ locally, and build this project locally. Alternatively, use the standalone jar.
