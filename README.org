@@ -15,7 +15,7 @@ Provides additional emacs utility to enable completing read of email addresses b
  - Not gmail specific, works with any imap server
 
 * Building/Installation
-- Clone this repository, then run ~lein uberjar~. See Bugs
+- Clone this repository, then run ~lein uberjar~. 
 - Alternatively, use a standalone jar from the releases
 
 * Usage and options
@@ -27,5 +27,3 @@ Provides additional emacs utility to enable completing read of email addresses b
  | -n, --newline                             |                                | display one message per line instead of continuous progress indicator                        |
  | -q, --quiet                               | quiet                          |                                                                                              |
  | -s, --imap-protocol-host-port IMAP_SERVER | ["https" "imap.gmail.com" 993] | url for for imap server including protocol, host, port, example 'https://imap.gmail.com:993' |
-* Bugs
-  This project depends on features of [[https://github.com/owainlewis/clojure-mail][clojure-mail]] unreleased as of this writing. A workaround is to clone the latest version from master, run ~lein install~ locally, and build this project locally. Alternatively, use the standalone jar.

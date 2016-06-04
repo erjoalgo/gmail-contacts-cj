@@ -12,7 +12,7 @@ Provides additional emacs utility to enable completing read of email addresses b
 
 # Building/Installation
 
--   Clone this repository, then run `lein uberjar`. See Bugs
+-   Clone this repository, then run `lein uberjar`.
 -   Alternatively, use a standalone jar from the releases
 
 # Usage and options
@@ -84,7 +84,3 @@ Provides additional emacs utility to enable completing read of email addresses b
 </tr>
 </tbody>
 </table>
-
-# Bugs
-
-This project depends on features of [clojure-mail](https://github.com/owainlewis/clojure-mail) unreleased as of this writing. A workaround is to clone the latest version from master, run `lein install` locally, and build this project locally. Alternatively, use the standalone jar.
