@@ -1,0 +1,31 @@
+#+OPTIONS: ^:nil
+#+OPTIONS: toc:nil
+#+OPTIONS: html-postamble:nil
+#+OPTIONS: num:nil
+
+Standalone program that maintains a local sqlite cache of (name . email) pairs by extracting
+senders and recipients from email messages in an IMAP-accessible inbox.
+
+Provides additional emacs utility to enable completing read of email addresses by name/email within gnus message mode.
+
+* Features
+ - Not too slow: extracts only TO/FROM/CC/BCC fields. Does not fetch or store message bodies, attachments or other heavier fields.
+ - Batches of emails processed in parallel
+ - Fetches newst messages first. It is not necessary to process entire inbox to have usable completion
+ - Not gmail specific, works with any imap server
+
+* Building/Installation
+- Clone this repository, then run ~lein uberjar~. See Bugs
+- Alternatively, use a standalone jar from the releases
+
+* Usage and options
+ | Option                                    | Default                                                                     | Description                                                                                  |   |   |
+ | -e, --email EMAIL                         | me@gmail.com                                                                | email address                                                                                |   |   |
+ | -d, --db DB                               | /home/user/.imap-contacts.db                                                | path to sqlite db                                                                            |   |   |
+ | -m, --max-results MAX                     | 600                                                                         | max results to fetch, default 600, 0 for infinite                                            |   |   |
+ | -p, --passwd-file PASSWD_FN               | path to file containing app specific pass. user is prompted if not provided |                                                                                              |   |   |
+ | -n, --newline                             |                                                                             | display one message per line instead of continuous progress indicator                                                                                    |   |   |
+ | -q, --quiet                               | quiet                                                                       |                                                                                              |   |   |
+ | -s, --imap-protocol-host-port IMAP_SERVER | ["https" "imap.gmail.com" 993]                                              | url for for imap server including protocol, host, port, example 'https://imap.gmail.com:993' |   |   |
+* Bugs
+  This project depends on features of [[https://github.com/owainlewis/clojure-mail][clojure-mail]] unreleased as of this writing. A workaround is to clone the latest version from master, run ~lein install~ locally, and build this project locally. Alternatively, use the standalone jar.
