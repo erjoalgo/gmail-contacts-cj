@@ -23,7 +23,7 @@
 	(names-emails-alist (mapcar (lambda (record) (mapcar 'cdr record))
 				    records))
 	name-or-email)
-    
+
     (setf name-or-email (completing-read
 			 "completing read of address or name: "
 			 names-emails-alist nil t))
