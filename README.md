@@ -7,13 +7,21 @@ Provides additional emacs utility to enable completing read of email addresses b
 
 -   Not too slow: extracts only TO/FROM/CC/BCC fields. Does not fetch or store message bodies, attachments or other heavier fields.
 -   Batches of emails processed in parallel
--   Fetches newst messages first. It is not necessary to process entire inbox to have usable completion
+-   Fetches newest messages first. It is not necessary to process entire inbox to have usable completion
 -   Not gmail specific, works with any imap server
 
 # Building/Installation
 
 -   Clone this repository, then run `lein uberjar`.
--   Alternatively, use a standalone jar from the releases
+-   Alternatively, use a standalone jar from the releases (TODO)
+
+# Emacs Installation
+
+-   Place `resources/imap-contacts.el` in your emacs load path.
+-   `(require 'imap-contacts)`
+-   Alternatively, install from MELPA (TODO)
+
+A binding `C-c i` is made available in gnus message-mode for completing read of a contact. A hook to briefly refresh contacts is automatically added to gnus-summary-mode. 
 
 # Usage and options
 
