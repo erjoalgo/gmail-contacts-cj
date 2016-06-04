@@ -75,15 +75,15 @@
           echo #(doto % println)
           messages (concat
                     ;;newer than our newest message, most recent first
-                    (let [newer-messages (.getMessagesByUID inbox (if largest-uid (inc largest-uid) LAST) LAST)
+                    (let [newer-messages (.getMessagesByUID inbox (if largest-uid (inc largest-uid) 1) LAST)
                           newest (first newer-messages)]
                       ;;we might have to remove oldest message, which is always returned
-                      (if (and newest largest-uid (= largest-uid (clojure-mail.message/uid newest)))
+                      (if (and newest (= largest-uid (clojure-mail.message/uid newest)))
                         (rest newer-messages) newer-messages))
 
                     ;;older than our oldest message, most recent first
-                    (when-not  (= smallest-uid 1)
-                      (.getMessagesByUID inbox FIRST (if smallest-uid (dec smallest-uid) LAST))))
+                    (when (and smallest-uid (> smallest-uid 1))
+                      (.getMessagesByUID inbox FIRST (dec smallest-uid))))
           total-message-count (count messages)]
       ;;make sure we're getting messages in ascending order
       (assert (or (-> messages nnext nil?)
