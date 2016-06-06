@@ -16,8 +16,7 @@
 (def default-max 600)
 
 (def cli-options
-  [["-e" "--email EMAIL" "email address"
-    :default "erjoalgo@gmail.com"]
+  [["-e" "--email EMAIL" "email address"]
    ["-d" "--db DB" "path to sqlite db"
     :default (-> (clojure.java.io/file (System/getenv "HOME") ".imap-contacts.db") .toString)]
    ["-m" "--max-results MAX" (format "max results to fetch, default %d, 0 for infinite"
@@ -35,7 +34,8 @@
                       (let [[_ protocol host port] match
                             port (Integer/parseInt port)]
                         [protocol host port])))
-    :default ["https" "imap.gmail.com" 993]]])
+    :default ["https" "imap.gmail.com" 993]]
+   ["-b" "--batch-size" "batch size per thread" :default 50]])
 
 (defn echo-message [short total-message-count index message]
   "print some info about the message and return it"
@@ -63,9 +63,9 @@
   (map vector (iterate inc 0) s))
 
 (defn process-messages [db store & {:keys [folder-name max-messages newline quiet batch-size]
-                                    :or {folder-name "INBOX"
-                                         batch-size 100}}]
-  (let [inbox (clojure-mail.core/open-folder store folder-name :readonly)]
+                                    :or {folder-name "INBOX"}}]
+  (let [inbox (clojure-mail.core/open-folder store folder-name :readonly)
+        batch-size (or batch-size nil)]
     (let [current-uid-validity (.getUIDValidity inbox)]
       (db/update-uid-validity-if-changed! db current-uid-validity))
 
@@ -97,11 +97,11 @@
                                    batch-size
                                    nil
                                    (take (or max-messages total-message-count) messages))))]
-        (printf "\r%d/%d" (* batch-size (inc batch-number)) total-message-count)
+        (printf "\r%d/%d" (min (* batch-size (inc batch-number)) total-message-count)
+                total-message-count)
         (flush)
         (let [name-address-map-lists (flatten (map second batch))
               uids (map first batch)]
-          (when-not  quiet (printf "flushing... %s\n" (pr-str uids)))
           (db/insert-name-address-to-db! db name-address-map-lists)
           (db/store-uids! db uids))))))
 
@@ -120,7 +120,8 @@
             passwd-file (:passwd-file opts)
             newline (:newline opts)
             quiet (:quiet opts)
-            pass (if passwd-file (slurp passwd-file) (read-password :prompt "enter app specific pass: "))
+            batch-size (:batch-size opts)
+            pass (if passwd-file (slurp passwd-file) (read-password :prompt "enter imap account password: "))
 
             db (db/sqlite-db-connection-for-file db-filename)
 
@@ -137,6 +138,7 @@
         (process-messages db mail-store
                           :max-messages (when-not (= 0 max-results) max-results)
                           :newline newline
+                          :batch-size batch-size
                           :quiet quiet)))))
 
 
