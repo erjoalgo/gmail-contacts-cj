@@ -21,7 +21,7 @@ Provides additional emacs utility to enable completing read of email addresses b
 -   `(require 'imap-contacts)`
 -   Alternatively, install from MELPA (TODO)
 
-A binding `C-c i` is made available in gnus message-mode for completing read of a contact. A hook to briefly refresh contacts is automatically added to gnus-summary-mode. 
+A binding `C-c i` is made available in gnus message-mode for completing read of a contact. A hook to briefly refresh contacts is automatically added to gnus-summary-mode.
 
 # Usage and options
 
@@ -45,14 +45,14 @@ A binding `C-c i` is made available in gnus message-mode for completing read of 
 
 <tr>
 <td class="left">-e, &#x2013;email EMAIL</td>
-<td class="left">me@gmail.com</td>
+<td class="left">&#xa0;</td>
 <td class="left">email address</td>
 </tr>
 
 
 <tr>
 <td class="left">-d, &#x2013;db DB</td>
-<td class="left">`/home/user/.imap-contacts.db`</td>
+<td class="left">*home/ealfonso*.imap-contacts.db</td>
 <td class="left">path to sqlite db</td>
 </tr>
 
@@ -74,14 +74,14 @@ A binding `C-c i` is made available in gnus message-mode for completing read of 
 <tr>
 <td class="left">-n, &#x2013;newline</td>
 <td class="left">&#xa0;</td>
-<td class="left">display one message per line instead of continuous progress indicator</td>
+<td class="left">flag to insert newlines instead of \r</td>
 </tr>
 
 
 <tr>
 <td class="left">-q, &#x2013;quiet</td>
-<td class="left">quiet</td>
 <td class="left">&#xa0;</td>
+<td class="left">quiet</td>
 </tr>
 
 
@@ -89,6 +89,13 @@ A binding `C-c i` is made available in gnus message-mode for completing read of 
 <td class="left">-s, &#x2013;imap-protocol-host-port IMAP\_SERVER</td>
 <td class="left">["https" "imap.gmail.com" 993]</td>
 <td class="left">url for for imap server including protocol, host, port, example 'https://imap.gmail.com:993'</td>
+</tr>
+
+
+<tr>
+<td class="left">-b, &#x2013;batch-size</td>
+<td class="left">&#xa0;</td>
+<td class="left">batch size per thread</td>
 </tr>
 </tbody>
 </table>

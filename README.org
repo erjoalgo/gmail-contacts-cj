@@ -15,20 +15,21 @@ Provides additional emacs utility to enable completing read of email addresses b
  - Not gmail specific, works with any imap server
 
 * Building/Installation
-- Clone this repository, then run ~lein uberjar~. 
+- Clone this repository, then run ~lein uberjar~.
 - Alternatively, use a standalone jar from the releases (TODO)
 * Emacs Installation
  - Place ~resources/imap-contacts.el~ in your emacs load path.
  - ~(require 'imap-contacts)~
  - Alternatively, install from MELPA (TODO)
- A binding ~C-c i~ is made available in gnus message-mode for completing read of a contact. A hook to briefly refresh contacts is automatically added to gnus-summary-mode. 
+ A binding ~C-c i~ is made available in gnus message-mode for completing read of a contact. A hook to briefly refresh contacts is automatically added to gnus-summary-mode.
 
 * Usage and options
- | Option                                    | Default                        | Description                                                                                  |
- | -e, --email EMAIL                         | me@gmail.com                   | email address                                                                                |
- | -d, --db DB                               | ~/home/user/.imap-contacts.db~ | path to sqlite db                                                                            |
- | -m, --max-results MAX                     | 600                            | max results to fetch, default 600, 0 for infinite                                            |
- | -p, --passwd-file PASSWD_FN               |                                | path to file containing app specific pass. user is prompted if not provided                  |
- | -n, --newline                             |                                | display one message per line instead of continuous progress indicator                        |
- | -q, --quiet                               | quiet                          |                                                                                              |
- | -s, --imap-protocol-host-port IMAP_SERVER | ["https" "imap.gmail.com" 993] | url for for imap server including protocol, host, port, example 'https://imap.gmail.com:993' |
+ | Option                                    | Default                          | Description                                                                                  |
+ | -e, --email EMAIL                         |                                  | email address                                                                                |
+ | -d, --db DB                               | /home/ealfonso/.imap-contacts.db | path to sqlite db                                                                            |
+ | -m, --max-results MAX                     | 600                              | max results to fetch, default 600, 0 for infinite                                            |
+ | -p, --passwd-file PASSWD_FN               |                                  | path to file containing app specific pass. user is prompted if not provided                  |
+ | -n, --newline                             |                                  | flag to insert newlines instead of \r                                                        |
+ | -q, --quiet                               |                                  | quiet                                                                                        |
+ | -s, --imap-protocol-host-port IMAP_SERVER | ["https" "imap.gmail.com" 993]   | url for for imap server including protocol, host, port, example 'https://imap.gmail.com:993' |
+ | -b, --batch-size                          |                                  | batch size per thread                                                                                            |
