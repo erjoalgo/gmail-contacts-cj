@@ -43,18 +43,22 @@
 (defun imap-contacts-name-or-address-completing-read ()
   "complete by either name or address"
   (let* ((records (sqlite3-query
-			     imap-contacts-db-fn
-			     "select name, address from contacts"))
+		   imap-contacts-db-fn
+		   "select name, address from contacts"))
 	 ;;this works because name comes first, so (name . address)
-	(names-emails-alist (mapcar (lambda (record) (mapcar 'cdr record))
-				    records))
-	name-or-email)
-
+	 (names-emails-alist (mapcar
+			      (lambda (record)
+				(destructuring-bind ((_ . name) (_ . address)) record
+				  ;;map address to itself if there is no name
+				  (list (if (string= name "") address name)
+					address)))
+				  records))
+	 name-or-email)
     (setf name-or-email (completing-read
 			 "completing read of address or name: "
 			 names-emails-alist nil t))
     (let ((cell (assoc-string name-or-email names-emails-alist t)))
-	  (or (cadr cell) name-or-email))))
+      (or (cadr cell) name-or-email))))
 
 (defun sqlite3-query (fn query)
   "returns an alist (col-name . col-value) for each record. example
@@ -75,14 +79,15 @@
   ;;"java -jar imap-contacts-cj-0.1.0-standalone.jar [args]"
   (start-process "imap-contacts-refresh"
 		 "*imap-contacts-refresh*"
-		 "java" "-jar" imap-standalone-jar-path
+		 "java" "-jar" imap-contacts-standalone-jar-path
 		 "-m" "200"
 		 "--db" imap-contacts-db-fn))
 
 (add-hook 'gnus-summary-mode-hook 'imap-contacts-refresh)
 
 (with-eval-after-load "message"
-  (define-key message-mode-map (kbd "\C-ci") 'imap-contacts-insert-contact))
+  (define-key message-mode-map (kbd "\C-ci") 'imap-contacts-insert-contact)
+  (define-key message-mode-map (kbd "s-i") 'imap-contacts-insert-contact))
 
 (provide 'imap-contacts)
 ;;; imap-contacts.el ends here
